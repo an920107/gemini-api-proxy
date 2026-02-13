@@ -1,19 +1,17 @@
-use actix_web::{App, test};
-use gemini_api_proxy::config;
+use actix_web::{App, test, web};
 use gemini_api_proxy::routes::health;
 use serde_json::Value;
+mod common;
 
 #[actix_web::test]
 async fn health_check_returns_200_ok_and_db_connected() {
-    // Load .env variables
-    dotenvy::dotenv().ok();
-
-    let pool = config::get_db_pool().await.expect("Failed to get database pool.");
+    // Use the shared helper to connect to the test database
+    let pool = common::configure_test_db().await;
 
     let app = test::init_service(
         App::new()
-            .app_data(actix_web::web::Data::new(pool.clone()))
-            .service(health::health_check),
+            .app_data(web::Data::new(pool.clone()))
+            .service(web::resource("/health").route(web::get().to(health::health_check))),
     )
     .await;
 

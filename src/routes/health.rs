@@ -1,8 +1,7 @@
-use actix_web::{HttpResponse, Responder, get, web};
+use actix_web::{HttpResponse, Responder, web};
 use serde_json;
 use sqlx::PgPool;
 
-#[get("/health")]
 pub async fn health_check(pool: web::Data<PgPool>) -> impl Responder {
     if let Ok(mut conn) = pool.acquire().await {
         if sqlx::query("SELECT 1").execute(&mut *conn).await.is_ok() {
