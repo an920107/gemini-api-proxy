@@ -1,6 +1,5 @@
 use actix_web::{App, test, web};
 use gemini_api_proxy::{middleware::auth::ApiKeyAuth, routes::proxy};
-use std::time::Duration;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 mod common;
@@ -53,8 +52,8 @@ async fn test_request_logging() {
     let resp = test::call_service(&app, req).await;
     assert!(resp.status().is_success());
 
-    // 3. Wait for async logging (tokio::spawn)
-    tokio::time::sleep(Duration::from_millis(200)).await;
+    // 3. Wait for async logging (tokio::spawn) using polling
+    common::wait_for_request_log(&pool).await;
 
     // 4. Assert Log
     let logs = sqlx::query!("SELECT * FROM request_logs")
