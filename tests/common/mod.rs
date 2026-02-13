@@ -37,7 +37,7 @@ pub async fn configure_test_db() -> PgPool {
         .expect("Failed to run migrations on test DB");
 
     // Truncate tables to remove data from previous runs
-    sqlx::query!("TRUNCATE TABLE api_keys, request_logs")
+    sqlx::query!("TRUNCATE TABLE api_keys, request_logs CASCADE")
         .execute(&pool)
         .await
         .expect("Failed to truncate tables");
