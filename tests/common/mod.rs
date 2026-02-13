@@ -1,16 +1,27 @@
+#![allow(dead_code)]
+
 use dotenvy;
 use env_logger;
-use gemini_api_proxy::config;
+use gemini_api_proxy::{config, models::api_key::ApiKey};
 use sqlx::PgPool;
 use std::sync::Once;
 
-static INIT: Once = Once::new();
+// Pre-computed SHA-256 hash of "VALID_TEST_KEY"
+pub const VALID_API_KEY_HASH: &str =
+    "2101dfa5e699f3895e93b8051fe9418b508af69a349d828cd70bc65d34b1b79b";
+pub const VALID_API_KEY: &str = "VALID_TEST_KEY";
 
+static INIT: Once = Once::new();
 pub fn setup() {
     INIT.call_once(|| {
         dotenvy::dotenv().ok();
         env_logger::init(); // Initialize logger for tests
     });
+}
+
+// Helper to seed the database with a valid API key for testing
+pub async fn seed_api_key(pool: &PgPool) {
+    let _ = ApiKey::create(pool, VALID_API_KEY_HASH, true).await;
 }
 
 /// Helper to configure the test database and return a connection pool
