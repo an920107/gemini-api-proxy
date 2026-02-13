@@ -30,9 +30,9 @@ description: "Task list for Usage Logging feature"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T002 Update `src/middleware/auth.rs` to retrieve `api_key_id` and attach it to `req.extensions()`
-- [ ] T003 [P] Create `src/models/request_log.rs` with `RequestLog` struct and `create` method (and export in `src/models.rs`)
-- [ ] T004 [P] Create `src/models/gemini.rs` with `GeminiResponsePartial` and `GeminiUsageMetadata` structs (and export in `src/models.rs`)
+- [x] T002 Update `src/middleware/auth.rs` to retrieve `api_key_id` and attach it to `req.extensions()`
+- [x] T003 [P] Create `src/models/request_log.rs` with `RequestLog` struct and `create` method (and export in `src/models.rs`)
+- [x] T004 [P] Create `src/models/gemini.rs` with `GeminiResponsePartial` and `GeminiUsageMetadata` structs (and export in `src/models.rs`)
 
 **Checkpoint**: Database schema ready, middleware passing ID, models defined.
 
@@ -48,16 +48,16 @@ description: "Task list for Usage Logging feature"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T005 [US1] Create integration test `tests/logging_test.rs` with wiremock setup for usage metadata
-- [ ] T006 [US1] Write failing test assertions verifying `request_logs` insertion
+- [x] T005 [US1] Create integration test `tests/logging_test.rs` with wiremock setup for usage metadata
+- [x] T006 [US1] Write failing test assertions verifying `request_logs` insertion
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Update `src/routes/proxy.rs` to capture request start time and `api_key_id` from extensions
-- [ ] T008 [US1] Modify `src/routes/proxy.rs` to read the full upstream response body into `Bytes` (instead of streaming)
-- [ ] T009 [US1] Implement logic in `src/routes/proxy.rs` to parse `GeminiResponsePartial` from the response body
-- [ ] T010 [US1] Implement `tokio::spawn` logic in `src/routes/proxy.rs` to asynchronously call `RequestLog::create`
-- [ ] T011 [US1] Ensure `src/routes/proxy.rs` returns the original response body to the client
+- [x] T007 [US1] Update `src/routes/proxy.rs` to capture request start time and `api_key_id` from extensions
+- [x] T008 [US1] Modify `src/routes/proxy.rs` to read the full upstream response body into `Bytes` (instead of streaming)
+- [x] T009 [US1] Implement logic in `src/routes/proxy.rs` to parse `GeminiResponsePartial` from the response body
+- [x] T010 [US1] Implement `tokio::spawn` logic in `src/routes/proxy.rs` to asynchronously call `RequestLog::create`
+- [x] T011 [US1] Ensure `src/routes/proxy.rs` returns the original response body to the client
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -67,9 +67,9 @@ description: "Task list for Usage Logging feature"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T012 Run `cargo clippy` and fix any lints
-- [ ] T013 Run `cargo fmt`
-- [ ] T014 Verify logging manually with `quickstart.md` steps
+- [x] T012 Run `cargo clippy` and fix any lints
+- [x] T013 Run `cargo fmt`
+- [x] T014 Verify logging manually with `quickstart.md` steps
 
 ---
 
