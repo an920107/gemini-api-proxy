@@ -28,11 +28,9 @@ pub async fn forward_request(
     client: web::Data<reqwest::Client>,
     base_url: web::Data<String>,
 ) -> HttpResponse {
-    // 1. Extract path tail from match_info or from the request path directly
-    // If we're in a scope, we might have matched {tail:.*}
-    let tail: String = req.match_info().query("tail").parse().unwrap_or_else(|_| {
-        // Fallback: if "tail" is not in match_info, maybe it's because we're matching the root of the scope
-        req.path().trim_start_matches("/v1beta/").to_string()
+    // 1. Extract path tail
+    let tail = req.match_info().get("tail").unwrap_or_else(|| {
+        req.path().trim_start_matches("/v1beta/")
     });
 
     // 2. Construct upstream URL
