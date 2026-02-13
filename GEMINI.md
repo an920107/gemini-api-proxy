@@ -24,6 +24,7 @@ cargo clippy
 Rust (2021 edition or later): Follow standard conventions
 
 ## Recent Changes
+- 002-api-key-auth: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 
 - 001-project-skeleton-and-db-connectivity: Added Rust (2021 edition or later) + `actix-web`, `tokio`, `serde`, `dotenvy`, `sqlx`, `env_logger`, `log`
 
