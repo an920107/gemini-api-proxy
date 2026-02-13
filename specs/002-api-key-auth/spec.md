@@ -78,7 +78,7 @@ This table stores the API keys that are permitted to access the system.
 
 | Field       | Type    | Constraints                  | Description                                |
 |-------------|---------|------------------------------|--------------------------------------------|
-| `id`        | TEXT    | PRIMARY KEY                  | A unique identifier for the API key entry. |
+| `id`        | UUID    | PRIMARY KEY                  | A unique identifier for the API key entry. |
 | `hashed_key`| TEXT    | UNIQUE, NOT NULL             | The securely hashed value of the API key.  |
 | `is_active` | BOOLEAN | NOT NULL, DEFAULT `true`     | A flag to enable or disable the key.       |
 
