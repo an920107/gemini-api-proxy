@@ -8,7 +8,7 @@ async fn health_check_returns_200_ok_and_db_connected() {
     // Load .env variables
     dotenvy::dotenv().ok();
 
-    let pool = config::get_db_pool().await;
+    let pool = config::get_db_pool().await.expect("Failed to get database pool.");
 
     let app = test::init_service(
         App::new()

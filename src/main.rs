@@ -1,12 +1,13 @@
 use actix_web::{App, HttpServer, web};
 use log::{info, warn};
+use std::error::Error;
 
 mod config;
 mod routes;
 
 /// Entry point for the Actix Web application.
 #[actix_web::main]
-pub async fn main() -> std::io::Result<()> {
+pub async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     // 1. Initialize the logger for structured and colorful logging.
     env_logger::init();
     dotenvy::dotenv().ok();
@@ -14,7 +15,7 @@ pub async fn main() -> std::io::Result<()> {
 
     // 2. Create and get the database connection pool.
     // The application will panic if it cannot establish a connection.
-    let pool = config::get_db_pool().await;
+    let pool = config::get_db_pool().await?;
     info!("Database connection pool created.");
 
     // 3. Perform a quick check to ensure the database connection is active.
@@ -45,5 +46,6 @@ pub async fn main() -> std::io::Result<()> {
     .bind(("127.0.0.1", 8080))?
     // Run the server, awaiting its termination.
     .run()
-    .await
+    .await?; // Add '?' to handle the Result from .run().await
+    Ok(())
 }
