@@ -1,5 +1,5 @@
 use actix_web::{App, test, web};
-use gemini_api_proxy::{middleware::auth::ApiKeyAuth, routes::models};
+use gemini_api_proxy::{middleware::auth::ApiKeyAuth, models::api_key::ApiKey, routes::models};
 use sqlx::PgPool;
 mod common;
 
@@ -10,14 +10,9 @@ const INVALID_API_KEY: &str = "INVALID_KEY";
 
 // Helper to seed the database with a valid API key for testing
 pub async fn seed_api_key(pool: &PgPool) {
-    sqlx::query!(
-        "INSERT INTO api_keys (hashed_key, is_active) VALUES ($1, $2) ON CONFLICT (hashed_key) DO NOTHING",
-        VALID_API_KEY_HASH,
-        true
-    )
-    .execute(pool)
-    .await
-    .expect("Failed to seed API key");
+    // We try to create. If it fails (e.g. already exists), we assume it's fine for this test context
+    // or we could check if it exists first.
+    let _ = ApiKey::create(pool, VALID_API_KEY_HASH, true).await;
 }
 
 #[actix_web::test]

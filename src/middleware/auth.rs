@@ -1,3 +1,4 @@
+use crate::models::api_key::ApiKey;
 use crate::utils::crypto::hash_api_key;
 use actix_web::body::EitherBody;
 use actix_web::{
@@ -77,19 +78,14 @@ where
 
             let hashed_api_key = hash_api_key(api_key);
 
-            let result = sqlx::query!(
-                "SELECT id FROM api_keys WHERE hashed_key = $1 AND is_active = true",
-                hashed_api_key
-            )
-            .fetch_optional(pool.get_ref())
-            .await;
+            let result = ApiKey::find_by_hashed_key(pool.get_ref(), &hashed_api_key).await;
 
             match result {
-                Ok(Some(_)) => {
+                Ok(Some(key)) if key.is_active => {
                     info!("API Key valid, forwarding request");
                     s_cloned.call(req).await.map(|res| res.map_into_left_body())
                 }
-                Ok(None) => {
+                Ok(_) => {
                     info!("API Key invalid or inactive, returning 403 Forbidden");
                     let (req, _pl) = req.into_parts();
                     let res = HttpResponse::Forbidden().finish().map_into_right_body();
