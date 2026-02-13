@@ -46,9 +46,7 @@ You can use a tool like `curl` to test the authentication endpoint.
 *   **Expected Result**: `200 OK`
 
 ```bash
-curl -v -X POST 
-  -H "x-goog-api-key: VALID_TEST_KEY" 
-  http://127.0.0.1:8080/v1beta/test-auth
+curl -v -X GET -H "x-goog-api-key: VALID_TEST_KEY" http://127.0.0.1:8080/v1beta/models
 ```
 
 ### Scenario 2: Invalid API Key
@@ -56,9 +54,7 @@ curl -v -X POST
 *   **Expected Result**: `403 Forbidden`
 
 ```bash
-curl -v -X POST 
-  -H "x-goog-api-key: INVALID_KEY" 
-  http://127.0.0.1:8080/v1beta/test-auth
+curl -v -X GET -H "x-goog-api-key: INVALID_KEY" http://127.0.0.1:8080/v1beta/models
 ```
 
 ### Scenario 3: Missing API Key
@@ -66,7 +62,7 @@ curl -v -X POST
 *   **Expected Result**: `401 Unauthorized`
 
 ```bash
-curl -v -X POST http://127.0.0.1:8080/v1beta/test-auth
+curl -v -X GET http://127.0.0.1:8080/v1beta/models
 ```
 
 ## 5. Running Automated Tests
