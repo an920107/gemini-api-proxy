@@ -1,0 +1,40 @@
+openapi: 3.0.0
+info:
+  title: Gemini API Proxy - Models API
+  version: 1.0.0
+  description: API for proxying requests to the Gemini Models endpoint, protected by API Key Authentication.
+
+paths:
+  /v1beta/models:
+    get:
+      summary: List Models Endpoint
+      description: |
+        Proxies the request to the real Gemini API's model listing endpoint.
+        Accessing this endpoint requires a valid API key.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Authentication successful, returns a list of models.
+        "401":
+          description: Unauthorized. The API key is missing from the request header. No response body is returned.
+        "403":
+          description: Forbidden. The API key is invalid or inactive. No response body is returned.
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-goog-api-key
+      description: API key for client authentication.
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: A brief description of the error.
+      example:
+        error: "Forbidden"
