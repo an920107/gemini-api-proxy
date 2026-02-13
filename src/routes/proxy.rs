@@ -105,6 +105,9 @@ pub async fn forward_request(
                                 &pool,
                                 key_id,
                                 endpoint_clone,
+                                partial
+                                    .model_version
+                                    .unwrap_or_else(|| "unknown".to_string()),
                                 usage.prompt_token_count.unwrap_or(0),
                                 usage.candidates_token_count.unwrap_or(0),
                                 usage.total_token_count.unwrap_or(0),

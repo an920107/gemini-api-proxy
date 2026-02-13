@@ -73,6 +73,18 @@ description: "Task list for Usage Logging feature"
 
 ---
 
+## Phase 5: Enhancement - Model Version Logging
+
+**Purpose**: Log the `modelVersion` returned by the Gemini API.
+
+- [x] T015 Create migration to add `model_version` to `request_logs` using `sqlx migrate add add_model_version_to_request_logs`
+- [x] T016 Update `src/models/request_log.rs` to include `model_version` field and update `create` method
+- [x] T017 Update `src/models/gemini.rs` to include `modelVersion` field in `GeminiResponsePartial`
+- [x] T018 Update `src/routes/proxy.rs` to extract and pass `model_version` to `RequestLog::create`
+- [x] T019 Update `tests/logging_test.rs` to verify `model_version` is logged correctly
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

@@ -37,6 +37,7 @@ Stores usage metrics for each successful API request.
 | `id` | `UUID` | `PRIMARY KEY`, `DEFAULT gen_random_uuid()` | Unique identifier for the log entry. |
 | `api_key_id` | `UUID` | `NOT NULL`, `REFERENCES api_keys(id)` | Foreign key linking to the authenticated API key. |
 | `endpoint` | `TEXT` | `NOT NULL` | The specific API path accessed (e.g., `/v1beta/models/...`). |
+| `model_version` | `TEXT` | `NOT NULL` | The model version returned by the API (e.g., `gemini-pro-001`). |
 | `prompt_tokens` | `INT` | `DEFAULT 0` | Number of tokens in the input prompt. |
 | `candidate_tokens` | `INT` | `DEFAULT 0` | Number of tokens in the generated response. |
 | `total_tokens` | `INT` | `DEFAULT 0` | Total token count for the request. |

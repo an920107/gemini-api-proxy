@@ -7,6 +7,7 @@ pub struct RequestLog {
     pub id: Uuid,
     pub api_key_id: Uuid,
     pub endpoint: String,
+    pub model_version: String,
     pub prompt_tokens: i32,
     pub candidate_tokens: i32,
     pub total_tokens: i32,
@@ -19,6 +20,7 @@ impl RequestLog {
         pool: &PgPool,
         api_key_id: Uuid,
         endpoint: String,
+        model_version: String,
         prompt_tokens: i32,
         candidate_tokens: i32,
         total_tokens: i32,
@@ -28,13 +30,14 @@ impl RequestLog {
             RequestLog,
             r#"
             INSERT INTO request_logs (
-                api_key_id, endpoint, prompt_tokens, candidate_tokens, total_tokens, latency_ms
+                api_key_id, endpoint, model_version, prompt_tokens, candidate_tokens, total_tokens, latency_ms
             )
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id, api_key_id, endpoint, prompt_tokens, candidate_tokens, total_tokens, latency_ms, created_at
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id, api_key_id, endpoint, model_version, prompt_tokens, candidate_tokens, total_tokens, latency_ms, created_at
             "#,
             api_key_id,
             endpoint,
+            model_version,
             prompt_tokens,
             candidate_tokens,
             total_tokens,

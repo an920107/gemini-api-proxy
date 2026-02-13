@@ -36,7 +36,7 @@ As a System Administrator, I want to track token usage for each API request so t
 -   **FR-001**: The system MUST intercept the HTTP response from the upstream Gemini API.
 -   **FR-002**: The system MUST parse the JSON response body to extract the `usageMetadata` object.
 -   **FR-003**: The system MUST persist a new record in the `request_logs` table for every successful request containing usage data.
--   **FR-004**: The log record MUST include: `api_key_id`, `endpoint`, `prompt_tokens`, `candidate_tokens`, `total_tokens`, `latency_ms`, and `created_at`.
+-   **FR-004**: The log record MUST include: `api_key_id`, `endpoint`, `model_version`, `prompt_tokens`, `candidate_tokens`, `total_tokens`, `latency_ms`, and `created_at`.
 -   **FR-005**: The logging operation MUST be performed asynchronously to avoid blocking the HTTP response to the client.
 -   **FR-006**: The system MUST return the original byte-exact response body to the client.
 
@@ -46,6 +46,7 @@ As a System Administrator, I want to track token usage for each API request so t
     -   `id`: UUID (Primary Key)
     -   `api_key_id`: UUID (Foreign Key to api_keys)
     -   `endpoint`: String (The API path accessed)
+    -   `model_version`: String (The model version returned by the API)
     -   `prompt_tokens`: Integer
     -   `candidate_tokens`: Integer
     -   `total_tokens`: Integer

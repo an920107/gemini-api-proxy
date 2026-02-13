@@ -12,4 +12,5 @@ pub struct GeminiUsageMetadata {
 #[serde(rename_all = "camelCase")]
 pub struct GeminiResponsePartial {
     pub usage_metadata: Option<GeminiUsageMetadata>,
+    pub model_version: Option<String>,
 }
