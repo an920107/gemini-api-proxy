@@ -18,8 +18,13 @@ pub async fn forward_request(
 
     // 2. Construct upstream URL
     let base = base_url.as_str().trim_end_matches('/');
-    let upstream_url = format!("{}/v1beta/{}", base, tail);
+    let mut upstream_url = format!("{}/v1beta/{}", base, tail);
 
+    // Append original query string, if any, so query parameters are forwarded
+    if let Some(query) = req.uri().query() {
+        upstream_url.push('?');
+        upstream_url.push_str(query);
+    }
     info!("Forwarding {} request to: {}", req.method(), upstream_url);
 
     // 3. Create upstream request using the same method as the incoming request
