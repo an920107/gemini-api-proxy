@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO request_logs (\n                api_key_id, endpoint, prompt_tokens, candidate_tokens, total_tokens, latency_ms\n            )\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING id, api_key_id, endpoint, prompt_tokens, candidate_tokens, total_tokens, latency_ms, created_at\n            ",
+  "query": "\n            INSERT INTO request_logs (\n                api_key_id, endpoint, model_version, prompt_tokens, candidate_tokens, total_tokens, latency_ms\n            )\n            VALUES ($1, $2, $3, $4, $5, $6, $7)\n            RETURNING id, api_key_id, endpoint, model_version, prompt_tokens, candidate_tokens, total_tokens, latency_ms, created_at\n            ",
   "describe": {
     "columns": [
       {
@@ -20,26 +20,31 @@
       },
       {
         "ordinal": 3,
+        "name": "model_version",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
         "name": "prompt_tokens",
         "type_info": "Int4"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "candidate_tokens",
         "type_info": "Int4"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "total_tokens",
         "type_info": "Int4"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "latency_ms",
         "type_info": "Int8"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "created_at",
         "type_info": "Timestamp"
       }
@@ -47,6 +52,7 @@
     "parameters": {
       "Left": [
         "Uuid",
+        "Text",
         "Text",
         "Int4",
         "Int4",
@@ -62,8 +68,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "9e05d0673fe84d6d67d5612104ecb0da2e1efbea282e5430b742432a9f390158"
+  "hash": "c4a39ab19597288a27d33c2db245f6d2224ca5f8ef25f6dfc0f5b86b049afa56"
 }
