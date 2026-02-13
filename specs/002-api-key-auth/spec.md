@@ -68,7 +68,7 @@ This document specifies the requirements for an API key authentication mechanism
 
 ### 3.2. Test Endpoint
 
-*   FR-8: A temporary endpoint at `POST /v1beta/test-auth` **MUST** be created to allow testing of the authentication mechanism. This endpoint requires valid authentication to access.
+*   FR-8: A temporary endpoint at `GET /v1beta/models` **MUST** be created to allow testing of the authentication mechanism. This endpoint requires valid authentication to access.
 
 ## 4. Key Entities & Data Model
 
