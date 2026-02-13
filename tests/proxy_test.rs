@@ -17,6 +17,11 @@ async fn test_proxy_request_forwarding() {
     Mock::given(method("POST"))
         .and(path("/v1beta/models/gemini-pro:generateContent"))
         .and(header("x-goog-api-key", common::VALID_API_KEY))
+        .and(wiremock::matchers::body_json(serde_json::json!({
+            "contents": [{
+                "parts": [{"text": "Hello"}]
+            }]
+        })))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
             "candidates": [{
                 "content": {
