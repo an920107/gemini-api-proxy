@@ -81,15 +81,20 @@ pub async fn forward_request(
             match resp.bytes().await {
                 Ok(bytes) => {
                     let mut builder = HttpResponse::build(status);
-                    // Forward essential headers back to the client
+                    // Forward all headers except hop-by-hop and sensitive ones
                     for (header_name, header_value) in headers.iter() {
                         let name_str = header_name.as_str().to_lowercase();
-                        if name_str == "content-type" || name_str == "x-goog-api-key" {
-                            if let Ok(val) = actix_web::http::header::HeaderValue::from_bytes(
-                                header_value.as_bytes(),
-                            ) {
-                                builder.insert_header((header_name.as_str(), val));
-                            }
+                        
+                        if HOP_BY_HOP_HEADERS.contains(name_str.as_str())
+                            || name_str == "x-goog-api-key"
+                        {
+                            continue;
+                        }
+
+                        if let Ok(val) =
+                            actix_web::http::header::HeaderValue::from_bytes(header_value.as_bytes())
+                        {
+                            builder.insert_header((header_name.as_str(), val));
                         }
                     }
                     builder.body(bytes)
