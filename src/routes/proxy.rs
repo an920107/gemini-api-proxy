@@ -3,6 +3,25 @@ use actix_web::web::Bytes;
 use actix_web::{HttpRequest, HttpResponse, web};
 use log::{error, info};
 
+use std::collections::HashSet;
+use std::sync::LazyLock;
+
+static HOP_BY_HOP_HEADERS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
+    [
+        "host",
+        "content-length",
+        "connection",
+        "keep-alive",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "te",
+        "trailer",
+        "transfer-encoding",
+        "upgrade",
+    ]
+    .into()
+});
+
 pub async fn forward_request(
     req: HttpRequest,
     body: Bytes,
@@ -39,7 +58,7 @@ pub async fn forward_request(
     for (header_name, header_value) in req.headers().iter() {
         // Skip Hop-by-hop headers and others that might cause issues
         let name_str = header_name.as_str().to_lowercase();
-        if name_str == "host" || name_str == "content-length" || name_str == "connection" {
+        if HOP_BY_HOP_HEADERS.contains(name_str.as_str()) {
             continue;
         }
 
@@ -68,9 +87,9 @@ pub async fn forward_request(
                     for (header_name, header_value) in headers.iter() {
                         let name_str = header_name.as_str().to_lowercase();
                         if name_str == "content-type" || name_str == "x-goog-api-key" {
-                            if let Ok(val) =
-                                actix_web::http::header::HeaderValue::from_bytes(header_value.as_bytes())
-                            {
+                            if let Ok(val) = actix_web::http::header::HeaderValue::from_bytes(
+                                header_value.as_bytes(),
+                            ) {
                                 builder.insert_header((header_name.as_str(), val));
                             }
                         }
