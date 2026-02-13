@@ -17,7 +17,7 @@ erDiagram
         UUID id PK
         TEXT hashed_key "UNIQUE, NOT NULL"
         BOOLEAN is_active "NOT NULL, DEFAULT TRUE"
-        TIMESTAMPTZ created_at "NOT NULL, DEFAULT NOW()"
+        TIMESTAMP created_at "NOT NULL, DEFAULT NOW()"
     }
 ```
 
@@ -34,7 +34,7 @@ Stores hashed representations of API keys that are authorized to access the serv
 | `id` | `UUID` | `PRIMARY KEY` | The unique identifier for the key record. |
 | `hashed_key` | `TEXT` | `UNIQUE`, `NOT NULL` | The SHA-256 hashed value of the client's API key. |
 | `is_active` | `BOOLEAN` | `NOT NULL`, `DEFAULT TRUE` | A flag to enable or disable the key without deleting it. |
-| `created_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT NOW()` | The timestamp when the key record was created. |
+| `created_at` | `TIMESTAMP` | `NOT NULL`, `DEFAULT NOW()` | The timestamp when the key record was created. |
 
 #### Indexes
 
