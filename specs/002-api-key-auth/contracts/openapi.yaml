@@ -14,15 +14,11 @@ paths:
       security:
         - ApiKeyAuth: []
       responses:
-        '200':
+        "200":
           description: Authentication successful, returns a list of models.
-        '401':
-          description: Unauthorized. The API key is missing from the request header.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+        "401":
+          description: Unauthorized. The API key is missing from the request header. No response body is returned.
+        "403":
           description: Forbidden. The API key is invalid or inactive. No response body is returned.
 
 components:
