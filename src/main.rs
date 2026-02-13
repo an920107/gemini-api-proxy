@@ -43,7 +43,7 @@ pub async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             .service(routes::health::health_check)
     })
     // Bind the server to the specified address and port.
-    .bind(("127.0.0.1", 8080))?
+    .bind(("0.0.0.0", 8080))?
     // Run the server, awaiting its termination.
     .run()
     .await?; // Add '?' to handle the Result from .run().await
