@@ -2,9 +2,10 @@ use actix_web::{App, HttpServer, web};
 use gemini_api_proxy::{
     config,
     middleware::auth::ApiKeyAuth,
-    routes::{health, models},
+    routes::{health, models, proxy},
 };
 use log::{info, warn};
+use std::env;
 use std::error::Error;
 
 /// Entry point for the Actix Web application.
@@ -30,15 +31,25 @@ pub async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         Err(e) => warn!("Database query test failed: {:?}", e),
     }
 
-    // 5. Configure and start the Actix Web server.
+    // 5. Initialize shared HTTP client
+    let client = reqwest::Client::new();
+    let gemini_base_url = env::var("GEMINI_BASE_URL")
+        .unwrap_or_else(|_| "https://generativelanguage.googleapis.com".to_string());
+
+    info!("Gemini Base URL: {}", gemini_base_url);
+
+    // 6. Configure and start the Actix Web server.
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(client.clone()))
+            .app_data(web::Data::new(gemini_base_url.clone()))
             .service(web::resource("/health").route(web::get().to(health::health_check)))
             .service(
-                web::resource("/v1beta/models")
+                web::scope("/v1beta")
                     .wrap(ApiKeyAuth)
-                    .route(web::get().to(models::list_models)),
+                    .service(web::resource("/models").route(web::get().to(models::list_models)))
+                    .route("/{tail:.*}", web::post().to(proxy::forward_request)),
             )
     })
     .bind(("0.0.0.0", 8080))?

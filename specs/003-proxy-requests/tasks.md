@@ -50,18 +50,18 @@ description: "Task list template for feature implementation"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T006 [US1] Create integration test file `tests/proxy_test.rs` and setup `wiremock::MockServer` test harness
-- [ ] T007 [US1] Write failing test case in `tests/proxy_test.rs` for forwarding a request and receiving a response
+- [x] T006 [US1] Create integration test file `tests/proxy_test.rs` and setup `wiremock::MockServer` test harness
+- [x] T007 [US1] Write failing test case in `tests/proxy_test.rs` for forwarding a request and receiving a response
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Create proxy controller module `src/routes/proxy.rs` and add `pub mod proxy;` to `src/routes.rs`
-- [ ] T009 [US1] Implement `forward_request` handler signature in `src/routes/proxy.rs` accepting `req`, `body`, `client`, and `base_url`
-- [ ] T010 [US1] Implement logic in `src/routes/proxy.rs` to extract path tail and construct upstream URL
-- [ ] T011 [US1] Implement logic in `src/routes/proxy.rs` to forward `x-goog-api-key`, `Content-Type`, and body
-- [ ] T012 [US1] Implement logic in `src/routes/proxy.rs` to await upstream response and relay status/body back to client
-- [ ] T013 [US1] Configure `/v1beta` scope in `src/main.rs` to route `{tail:.*}` to `forward_request` handler
-- [ ] T014 [US1] Ensure `ApiKeyMiddleware` wraps the `/v1beta` route in `src/main.rs`
+- [x] T008 [US1] Create proxy controller module `src/routes/proxy.rs` and add `pub mod proxy;` to `src/routes.rs`
+- [x] T009 [US1] Implement `forward_request` handler signature in `src/routes/proxy.rs` accepting `req`, `body`, `client`, and `base_url`
+- [x] T010 [US1] Implement logic in `src/routes/proxy.rs` to extract path tail and construct upstream URL
+- [x] T011 [US1] Implement logic in `src/routes/proxy.rs` to forward `x-goog-api-key`, `Content-Type`, and body
+- [x] T012 [US1] Implement logic in `src/routes/proxy.rs` to await upstream response and relay status/body back to client
+- [x] T013 [US1] Configure `/v1beta` scope in `src/main.rs` to route `{tail:.*}` to `forward_request` handler
+- [x] T014 [US1] Ensure `ApiKeyMiddleware` wraps the `/v1beta` route in `src/main.rs`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -71,9 +71,9 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T015 Run `cargo clippy` and fix any lints
-- [ ] T016 Run `cargo fmt` to ensure code style compliance
-- [ ] T017 Verify implementation with manual `curl` test against real Google API (optional manual step)
+- [x] T015 Run `cargo clippy` and fix any lints
+- [x] T016 Run `cargo fmt` to ensure code style compliance
+- [x] T017 Verify implementation with manual `curl` test against real Google API (optional manual step)
 
 ---
 
