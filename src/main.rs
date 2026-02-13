@@ -19,18 +19,10 @@ pub async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     info!("Database connection pool created.");
 
     // 3. Perform a quick check to ensure the database connection is active.
-    match pool.acquire().await {
-        Ok(mut conn) => match sqlx::query("SELECT 1").execute(&mut *conn).await {
-            Ok(_) => info!("Database connectivity verified."),
-            Err(e) => warn!("Database query test failed: {:?}", e),
-        },
-        Err(e) => {
-            // Panic early if a connection cannot be acquired at startup.
-            panic!(
-                "Failed to acquire database connection during startup: {:?}",
-                e
-            );
-        }
+    let mut conn = pool.acquire().await?;
+    match sqlx::query("SELECT 1").execute(&mut *conn).await {
+        Ok(_) => info!("Database connectivity verified."),
+        Err(e) => warn!("Database query test failed: {:?}", e),
     }
 
     // 4. Configure and start the Actix Web server.
@@ -47,5 +39,6 @@ pub async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     // Run the server, awaiting its termination.
     .run()
     .await?; // Add '?' to handle the Result from .run().await
+
     Ok(())
 }
