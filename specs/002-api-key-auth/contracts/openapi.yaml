@@ -23,11 +23,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Forbidden. The API key is invalid or inactive.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden. The API key is invalid or inactive. No response body is returned.
 
 components:
   securitySchemes:
