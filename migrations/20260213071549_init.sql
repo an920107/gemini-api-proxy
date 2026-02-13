@@ -1,0 +1,2 @@
+-- Initial migration: intentionally left empty.
+-- This migration does not create or modify any database objects and serves as a baseline.

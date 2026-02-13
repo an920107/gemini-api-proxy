@@ -1,0 +1,24 @@
+openapi: 3.0.0
+info:
+  title: Gemini API Proxy - Health Check
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      summary: Health Check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  db:
+                    type: string
+                    example: connected
+        '503':
+          description: Service is unavailable (e.g., database connection issue)
