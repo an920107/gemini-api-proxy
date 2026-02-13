@@ -2,7 +2,7 @@ use actix_web::{App, HttpServer, web};
 use gemini_api_proxy::{
     config,
     middleware::auth::ApiKeyAuth,
-    routes::{health, models, proxy},
+    routes::{health, proxy},
 };
 use log::{info, warn};
 use std::env;
@@ -48,8 +48,7 @@ pub async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             .service(
                 web::scope("/v1beta")
                     .wrap(ApiKeyAuth)
-                    .service(web::resource("/models").route(web::get().to(models::list_models)))
-                    .route("/{tail:.*}", web::post().to(proxy::forward_request)),
+                    .route("/{tail:.*}", web::to(proxy::forward_request)),
             )
     })
     .bind(("0.0.0.0", 8080))?
