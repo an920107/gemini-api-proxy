@@ -16,7 +16,8 @@ tests/
 
 ## Commands
 
-cargo test [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLOGIES] cargo clippy
+cargo test
+cargo clippy
 
 ## Code Style
 
