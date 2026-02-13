@@ -72,9 +72,17 @@ where
                 }
             };
 
-            let pool = req
-                .app_data::<Data<PgPool>>()
-                .expect("Database pool not found in app data");
+            let pool = req.app_data::<Data<PgPool>>();
+            let pool = match pool {
+                Some(pool) => pool,
+                None => {
+                    let (req, _pl) = req.into_parts();
+                    let res = HttpResponse::InternalServerError()
+                        .body("Database pool not found in app data")
+                        .map_into_right_body();
+                    return Ok(ServiceResponse::new(req, res));
+                }
+            };
 
             let hashed_api_key = hash_api_key(api_key);
 
