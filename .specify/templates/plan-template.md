@@ -35,7 +35,7 @@
 *   [ ] **Architecture**: The solution adheres to the pragmatic MVC pattern.
 *   [ ] **Error Handling**: `thiserror` and `ResponseError` are used for centralized error management.
 *   [ ] **Database**: `sqlx` is used with compile-time checked queries.
-*   [ ] **Coding Standards**: The code is idiomatic Rust (2021+), clippy compliant, and uses `Result`/`Option`.
+*   [ ] **Coding Standards**: The code is idiomatic Rust (2021+), clippy compliant, uses `Result`/`Option`, uses `feature.rs` instead of `feature/mod.rs`, and dependencies are managed via cargo commands.
 
 ## Project Structure
 

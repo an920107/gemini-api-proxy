@@ -1,19 +1,12 @@
 <!--
 Sync Impact Report:
-- Version change: 0.0.0 → 1.0.0
+- Version change: 1.1.0 → 1.2.0
 - Modified principles:
-    - [PRINCIPLE_1_NAME] → ATDD First
-    - [PRINCIPLE_2_NAME] → Architecture
-    - [PRINCIPLE_3_NAME] → Error Handling
-    - [PRINCIPLE_4_NAME] → Database
-- Added sections:
-    - Coding Standards
-- Removed sections:
-    - [PRINCIPLE_5_NAME]
+    - Coding Standards (Added module organization rule)
+- Added sections: None
+- Removed sections: None
 - Templates requiring updates:
     - ✅ .specify/templates/plan-template.md
-    - ✅ .specify/templates/spec-template.md
-    - ✅ .specify/templates/tasks-template.md
 - Follow-up TODOs: None
 -->
 # High-performance API Proxy Constitution
@@ -37,11 +30,13 @@ Use `thiserror` for library-level errors and implement `ResponseError` for `acti
 Use `sqlx` (Async) with PostgreSQ (strictly typed). Ensure all SQL queries are checked at compile time if possible (`sqlx::query_as!`).
 
 ## Coding Standards
--   Language: Rust (2021 edition or later).
--   Style: Follow idiomatic Rust (clippy compliant). Prefer `Result` and `Option` over unwrap.
--   Testing: Use `actix-web`'s integration test utilities for acceptance tests.
+-   **Language:** Rust (2021 edition or later).
+-   **Style:** Follow idiomatic Rust (clippy compliant). Prefer `Result` and `Option` over unwrap.
+-   **Testing:** Use `actix-web`'s integration test utilities for acceptance tests.
+-   **Dependencies:** Use `cargo add` / `cargo remove` commands to manage dependencies. Do not edit `Cargo.toml` manually unless necessary.
+-   **Modules:** Use `feature.rs` style for defining modules instead of `feature/mod.rs` (Rust 2018 edition style).
 
 ## Governance
 This Constitution supersedes all other practices. Amendments require documentation, approval, and a migration plan. All pull requests and reviews must verify compliance with this constitution.
 
-**Version**: 1.0.0 | **Ratified**: 2026-02-13 | **Last Amended**: 2026-02-13
+**Version**: 1.2.0 | **Ratified**: 2026-02-13 | **Last Amended**: 2026-02-13
