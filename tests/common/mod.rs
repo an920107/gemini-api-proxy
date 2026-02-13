@@ -5,6 +5,7 @@ use env_logger;
 use gemini_api_proxy::{config, models::api_key::ApiKey};
 use sqlx::PgPool;
 use std::sync::Once;
+use std::time::Duration;
 
 // Pre-computed SHA-256 hash of "VALID_TEST_KEY"
 pub const VALID_API_KEY_HASH: &str =
@@ -37,10 +38,28 @@ pub async fn configure_test_db() -> PgPool {
         .expect("Failed to run migrations on test DB");
 
     // Truncate tables to remove data from previous runs
-    sqlx::query!("TRUNCATE TABLE api_keys")
+    sqlx::query!("TRUNCATE TABLE api_keys, request_logs CASCADE")
         .execute(&pool)
         .await
-        .expect("Failed to truncate api_keys table");
+        .expect("Failed to truncate tables");
 
     pool
+}
+
+// Helper to poll for request logs to appear in the database
+pub async fn wait_for_request_log(pool: &PgPool) {
+    for _ in 0..100u32 {
+        let count = sqlx::query!("SELECT count(*) as count FROM request_logs")
+            .fetch_one(pool)
+            .await
+            .expect("Failed to fetch log count")
+            .count
+            .unwrap_or(0);
+
+        if count > 0 {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    panic!("Timeout waiting for request log to appear in database");
 }

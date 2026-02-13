@@ -2,7 +2,7 @@ use crate::models::api_key::ApiKey;
 use crate::utils::crypto::hash_api_key;
 use actix_web::body::EitherBody;
 use actix_web::{
-    Error, HttpResponse,
+    Error, HttpMessage, HttpResponse,
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
     web::Data,
 };
@@ -91,6 +91,7 @@ where
             match result {
                 Ok(Some(key)) if key.is_active => {
                     info!("API Key valid, forwarding request");
+                    req.extensions_mut().insert(key.id);
                     s_cloned.call(req).await.map(|res| res.map_into_left_body())
                 }
                 Ok(_) => {
