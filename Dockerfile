@@ -19,6 +19,7 @@ COPY . .
 
 # Update modification time to force rebuild of the application
 RUN touch src/main.rs && \
+    touch src/lib.rs && \
     cargo build --release --locked
 
 FROM alpine:latest AS runner
