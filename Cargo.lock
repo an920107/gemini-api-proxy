@@ -946,7 +946,6 @@ dependencies = [
  "dotenvy",
  "env_logger",
  "futures",
- "futures-channel",
  "futures-util",
  "hex",
  "log",
