@@ -37,7 +37,7 @@ async fn test_request_logging() {
             .service(
                 web::scope("/v1beta")
                     .wrap(ApiKeyAuth)
-                    .route("/{tail:.*}", web::to(proxy::forward_request)),
+                    .route("/{tail:.*}", web::to(proxy::proxy_handler)),
             ),
     )
     .await;

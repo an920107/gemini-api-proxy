@@ -44,7 +44,7 @@ async fn test_proxy_request_forwarding() {
             .service(
                 web::scope("/v1beta")
                     .wrap(ApiKeyAuth)
-                    .route("/{tail:.*}", web::post().to(proxy::forward_request)),
+                                        .route("/{tail:.*}", web::to(proxy::proxy_handler)),
             ),
     )
     .await;
@@ -108,7 +108,7 @@ async fn test_proxy_get_models() {
             .service(
                 web::scope("/v1beta")
                     .wrap(ApiKeyAuth)
-                    .route("/{tail:.*}", web::to(proxy::forward_request)),
+                    .route("/{tail:.*}", web::to(proxy::proxy_handler)),
             ),
     )
     .await;

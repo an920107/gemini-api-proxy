@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GeminiUsageMetadata {
     pub prompt_token_count: Option<i32>,
@@ -8,9 +8,16 @@ pub struct GeminiUsageMetadata {
     pub total_token_count: Option<i32>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GeminiResponsePartial {
     pub usage_metadata: Option<GeminiUsageMetadata>,
     pub model_version: Option<String>,
+}
+
+// New struct for individual chunks in a streaming response
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct StreamedGeminiResponse {
+    pub usage_metadata: Option<GeminiUsageMetadata>,
 }

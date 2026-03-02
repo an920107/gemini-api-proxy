@@ -10,7 +10,7 @@ This document outlines the tasks required to implement the streaming usage metad
 
 *Goal: Prepare the development environment and create necessary placeholders.*
 
-- [ ] T001 Create a new test file for streaming usage logging in `tests/streaming_test.rs`
+- [x] T001 Create a new test file for streaming usage logging in `tests/streaming_test.rs`
 
 ---
 
@@ -19,23 +19,23 @@ This document outlines the tasks required to implement the streaming usage metad
 *Goal: Implement the core functionality to capture and store token usage metadata for streaming API requests.*
 *Independent Test: A streaming request to the proxy results in a database record with correct token counts.*
 
-- [ ] T002 [US1] Write a failing acceptance test in `tests/streaming_test.rs` that sends a streaming request to the proxy and asserts that the `request_logs` table contains a record with the correct token usage metadata.
-- [ ] T003 [P] [US1] In `src/routes/proxy.rs`, modify the proxy handler to detect streaming responses (e.g., by checking `Content-Type: text/event-stream` or `Transfer-Encoding: chunked`).
-- [ ] T004 [US1] In `src/routes/proxy.rs`, implement logic to intercept and parse the response stream. This will involve creating a new stream that wraps the original, inspects the chunks for usage metadata, and forwards the chunks to the client.
-- [ ] T005 [P] [US1] In `src/models/gemini.rs`, define a struct to represent the usage metadata that may be present in the stream.
-- [ ] T006 [US1] In `src/routes/proxy.rs`, when usage metadata is found in the stream, extract the `prompt_tokens`, `completion_tokens`, and `total_tokens`.
-- [ ] T007 [US1] In `src/routes/proxy.rs`, update the corresponding `request_logs` record in the database with the extracted usage metadata. This should happen after the stream has completed.
-- [ ] T008 [US1] Ensure the acceptance test created in T002 now passes.
-- [ ] T009 [US1] Manually verify that non-streaming requests in `tests/proxy_test.rs` still log usage correctly and are unaffected by the changes.
+- [x] T002 [US1] Write a failing acceptance test in `tests/streaming_test.rs` that sends a streaming request to the proxy and asserts that the `request_logs` table contains a record with the correct token usage metadata.
+- [x] T003 [P] [US1] In `src/routes/proxy.rs`, modify the proxy handler to detect streaming responses (e.g., by checking `Content-Type: text/event-stream` or `Transfer-Encoding: chunked`).
+- [x] T004 [US1] In `src/routes/proxy.rs`, implement logic to intercept and parse the response stream. This will involve creating a new stream that wraps the original, inspects the chunks for usage metadata, and forwards the chunks to the client.
+- [x] T005 [P] [US1] In `src/models/gemini.rs`, define a struct to represent the usage metadata that may be present in the stream.
+- [x] T006 [US1] In `src/routes/proxy.rs`, when usage metadata is found in the stream, extract the `prompt_tokens`, `completion_tokens`, and `total_tokens`.
+- [x] T007 [US1] In `src/routes/proxy.rs`, update the corresponding `request_logs` record in the database with the extracted usage metadata. This should happen after the stream has completed.
+- [x] T008 [US1] Ensure the acceptance test created in T002 now passes.
+- [x] T009 [US1] Manually verify that non-streaming requests in `tests/proxy_test.rs` still log usage correctly and are unaffected by the changes.
 ---
 
 ## Phase 3: Polish & Cross-Cutting Concerns
 
 *Goal: Ensure the implementation is robust and handles edge cases.*
 
-- [ ] T010 Review and refactor the stream parsing logic in `src/routes/proxy.rs` for clarity, performance, and adherence to Rust best practices.
-- [ ] T011 Add logging to the stream parsing logic to aid in debugging potential issues with malformed chunks or missing usage data.
-- [ ] T012 Verify that the performance impact of the stream parsing logic is within the 5ms latency goal defined in `research.md`.
+- [x] T010 Review and refactor the stream parsing logic in `src/routes/proxy.rs` for clarity, performance, and adherence to Rust best practices.
+- [x] T011 Add logging to the stream parsing logic to aid in debugging potential issues with malformed chunks or missing usage data.
+- [x] T012 Verify that the performance impact of the stream parsing logic is within the 5ms latency goal defined in `research.md`.
 
 ---
 
