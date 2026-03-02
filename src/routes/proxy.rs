@@ -5,7 +5,7 @@ use crate::models::{
 };
 use actix_web::http::StatusCode;
 use actix_web::web::Bytes;
-use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
+use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use futures_util::stream::StreamExt;
 use log::{error, info, warn};
 use sqlx::PgPool;
@@ -99,10 +99,9 @@ pub async fn proxy_handler(
         }
     }
 
-    if headers
-        .get("content-type")
-        .map_or(false, |h| h.to_str().unwrap_or("").contains("text/event-stream"))
-    {
+    if headers.get("content-type").map_or(false, |h| {
+        h.to_str().unwrap_or("").contains("text/event-stream")
+    }) {
         let usage_metadata = Arc::new(Mutex::new(None::<GeminiUsageMetadata>));
         let usage_metadata_clone = usage_metadata.clone();
 

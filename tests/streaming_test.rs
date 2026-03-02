@@ -1,7 +1,9 @@
 //! tests/streaming_test.rs
 
-use actix_web::{test, web, App};
-use gemini_api_proxy::{middleware::auth::ApiKeyAuth, routes::proxy::proxy_handler, models::request_log::RequestLog};
+use actix_web::{App, test, web};
+use gemini_api_proxy::{
+    middleware::auth::ApiKeyAuth, models::request_log::RequestLog, routes::proxy::proxy_handler,
+};
 use sqlx::PgPool;
 
 mod common;
@@ -35,7 +37,7 @@ async fn test_streaming_usage_logging() {
             .service(
                 web::scope("/v1beta")
                     .wrap(ApiKeyAuth)
-                    .route("/{tail:.*}", web::to(proxy_handler))
+                    .route("/{tail:.*}", web::to(proxy_handler)),
             ),
     )
     .await;
@@ -50,7 +52,7 @@ async fn test_streaming_usage_logging() {
     assert!(resp.status().is_success());
 
     mock.assert_async().await;
-    
+
     // Wait for the request log to be written to the database
     common::wait_for_request_log(&pool).await;
 
