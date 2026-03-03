@@ -22,7 +22,6 @@ async fn test_request_logging() {
                 "candidatesTokenCount": 20,
                 "totalTokenCount": 30
             },
-            "modelVersion": "gemini-pro-test"
         })))
         .mount(&mock_server)
         .await;
@@ -37,7 +36,7 @@ async fn test_request_logging() {
             .service(
                 web::scope("/v1beta")
                     .wrap(ApiKeyAuth)
-                    .route("/{tail:.*}", web::to(proxy::forward_request)),
+                    .route("/{tail:.*}", web::to(proxy::proxy_handler)),
             ),
     )
     .await;
@@ -64,7 +63,7 @@ async fn test_request_logging() {
     assert_eq!(logs.len(), 1, "Expected 1 log entry, found {}", logs.len());
     let log = &logs[0];
     assert_eq!(log.endpoint, "models/gemini-pro:generateContent");
-    assert_eq!(log.model_version, "gemini-pro-test");
+    assert_eq!(log.model_version, "gemini-pro");
     assert_eq!(log.prompt_tokens, 10);
     assert_eq!(log.candidate_tokens, 20);
     assert_eq!(log.total_tokens, 30);

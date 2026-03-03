@@ -1,12 +1,20 @@
-use crate::models::{gemini::GeminiResponsePartial, request_log::RequestLog};
+use crate::errors::StreamError;
+use crate::models::{
+    gemini::{GeminiResponsePartial, GeminiUsageMetadata},
+    request_log::RequestLog,
+};
 use actix_web::http::StatusCode;
 use actix_web::web::Bytes;
-use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
-use log::{error, info};
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
+use futures_util::stream::StreamExt;
+use log::{error, info, warn};
 use sqlx::PgPool;
 use std::collections::HashSet;
 use std::sync::LazyLock;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 use uuid::Uuid;
 
 static HOP_BY_HOP_HEADERS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
@@ -25,7 +33,7 @@ static HOP_BY_HOP_HEADERS: LazyLock<HashSet<&str>> = LazyLock::new(|| {
     .into()
 });
 
-pub async fn forward_request(
+pub async fn proxy_handler(
     req: HttpRequest,
     body: Bytes,
     client: web::Data<reqwest::Client>,
@@ -35,117 +43,210 @@ pub async fn forward_request(
     let start = Instant::now();
     let api_key_id = req.extensions().get::<Uuid>().cloned();
 
-    // 1. Extract path tail
     let tail = req
         .match_info()
         .get("tail")
         .unwrap_or_else(|| req.path().trim_start_matches("/v1beta/"));
     let endpoint = tail.to_string();
 
-    // 2. Construct upstream URL
     let base = base_url.as_str().trim_end_matches('/');
     let mut upstream_url = format!("{}/v1beta/{}", base, tail);
-
-    // Append original query string, if any, so query parameters are forwarded
     if let Some(query) = req.uri().query() {
         upstream_url.push('?');
         upstream_url.push_str(query);
     }
     info!("Forwarding {} request to: {}", req.method(), upstream_url);
 
-    // 3. Create upstream request using the same method as the incoming request
     let method = match reqwest::Method::from_bytes(req.method().as_str().as_bytes()) {
         Ok(m) => m,
         Err(_) => return HttpResponse::BadRequest().body("Invalid HTTP method"),
     };
 
     let mut upstream_req = client.request(method, &upstream_url);
-
-    // 4. Forward headers
     for (header_name, header_value) in req.headers().iter() {
-        // Skip Hop-by-hop headers and others that might cause issues
         let name_str = header_name.as_str().to_lowercase();
         if HOP_BY_HOP_HEADERS.contains(name_str.as_str()) {
             continue;
         }
-
         if let Ok(val) = reqwest::header::HeaderValue::from_bytes(header_value.as_bytes()) {
             upstream_req = upstream_req.header(header_name.as_str(), val);
         }
     }
-
-    // 5. Forward body if it's not empty
     if !body.is_empty() {
         upstream_req = upstream_req.body(body);
     }
 
-    // 6. Send request
-    match upstream_req.send().await {
-        Ok(resp) => {
-            let status = StatusCode::from_u16(resp.status().as_u16())
-                .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-            let headers = resp.headers().clone();
-
-            // 7. Relay response
-            match resp.bytes().await {
-                Ok(bytes) => {
-                    let latency_ms = start.elapsed().as_millis() as i64;
-
-                    // Log usage if successful and metadata present
-                    if status.is_success()
-                        && let Ok(partial) = serde_json::from_slice::<GeminiResponsePartial>(&bytes)
-                        && let Some(usage) = partial.usage_metadata
-                        && let Some(key_id) = api_key_id
-                    {
-                        let pool = pool.get_ref().clone();
-                        let endpoint_clone = endpoint.clone();
-
-                        tokio::spawn(async move {
-                            if let Err(e) = RequestLog::create(
-                                &pool,
-                                key_id,
-                                endpoint_clone,
-                                partial.model_version.unwrap_or("unknown".to_string()),
-                                usage.prompt_token_count.unwrap_or(0),
-                                usage.candidates_token_count.unwrap_or(0),
-                                usage.total_token_count.unwrap_or(0),
-                                latency_ms,
-                            )
-                            .await
-                            {
-                                error!("Failed to log request usage: {}", e);
-                            }
-                        });
-                    }
-
-                    let mut builder = HttpResponse::build(status);
-                    // Forward all headers except hop-by-hop and sensitive ones
-                    for (header_name, header_value) in headers.iter() {
-                        let name_str = header_name.as_str().to_lowercase();
-
-                        if HOP_BY_HOP_HEADERS.contains(name_str.as_str())
-                            || name_str == "x-goog-api-key"
-                        {
-                            continue;
-                        }
-
-                        if let Ok(val) = actix_web::http::header::HeaderValue::from_bytes(
-                            header_value.as_bytes(),
-                        ) {
-                            builder.insert_header((header_name.as_str(), val));
-                        }
-                    }
-                    builder.body(bytes)
-                }
-                Err(e) => {
-                    error!("Failed to read upstream response body: {}", e);
-                    HttpResponse::InternalServerError().body("Upstream error")
-                }
-            }
-        }
+    let upstream_resp = match upstream_req.send().await {
+        Ok(resp) => resp,
         Err(e) => {
             error!("Failed to forward request: {}", e);
-            HttpResponse::BadGateway().body(format!("Upstream error: {}", e))
+            return HttpResponse::BadGateway().body(format!("Upstream error: {}", e));
+        }
+    };
+
+    let status = StatusCode::from_u16(upstream_resp.status().as_u16())
+        .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+    let headers = upstream_resp.headers().clone();
+
+    let mut builder = HttpResponse::build(status);
+    for (header_name, header_value) in headers.iter() {
+        let name_str = header_name.as_str().to_lowercase();
+        if HOP_BY_HOP_HEADERS.contains(name_str.as_str()) || name_str == "x-goog-api-key" {
+            continue;
+        }
+        if let Ok(val) = actix_web::http::header::HeaderValue::from_bytes(header_value.as_bytes()) {
+            builder.insert_header((header_name.as_str(), val));
+        }
+    }
+
+    let model_version = endpoint
+        .strip_prefix("models/")
+        .unwrap_or(&endpoint)
+        .split(':')
+        .next()
+        .unwrap_or(&endpoint)
+        .to_string();
+
+    if headers.get("content-type").map_or(false, |h| {
+        h.to_str()
+            .unwrap_or("")
+            .to_lowercase()
+            .contains("text/event-stream")
+    }) {
+        let usage_metadata = Arc::new(Mutex::new(None::<GeminiUsageMetadata>));
+        let usage_metadata_clone = usage_metadata.clone();
+
+        let mut original_stream = upstream_resp.bytes_stream();
+        let (tx, rx) = mpsc::unbounded_channel::<Result<Bytes, StreamError>>();
+        let stream_rx = UnboundedReceiverStream::new(rx);
+
+        let pool_clone = pool.get_ref().clone();
+        let endpoint_clone = endpoint.clone();
+        let model_version_clone = model_version.clone();
+        let api_key_id_captured = api_key_id;
+
+        tokio::spawn(async move {
+            let mut line_buffer = String::new();
+            while let Some(item) = original_stream.next().await {
+                match item {
+                    Ok(chunk) => {
+                        if let Ok(text) = std::str::from_utf8(&chunk) {
+                            line_buffer.push_str(text);
+                            
+                            while let Some(pos) = line_buffer.find('\n') {
+                                let line = line_buffer[..pos].trim_end().to_string();
+                                line_buffer.drain(..pos + 1);
+
+                                let trimmed_line = line.trim();
+                                if trimmed_line.starts_with("data: ") {
+                                    let json_str = &trimmed_line["data: ".len()..];
+                                    if json_str == "[DONE]" {
+                                        continue;
+                                    }
+                                    if let Ok(parsed) =
+                                        serde_json::from_str::<GeminiResponsePartial>(json_str)
+                                    {
+                                        if let Some(usage) = parsed.usage_metadata {
+                                            *usage_metadata_clone.lock().unwrap() = Some(usage);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if tx.send(Ok(chunk)).is_err() {
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        error!("Stream error: {}", e);
+                        let _ = tx.send(Err(StreamError {
+                            status: StatusCode::INTERNAL_SERVER_ERROR,
+                            message: e.to_string(),
+                        }));
+                        break;
+                    }
+                }
+            }
+
+            // Process any remaining data in the buffer after stream ends
+            let final_line = line_buffer.trim();
+            if final_line.starts_with("data: ") {
+                let json_str = &final_line["data: ".len()..];
+                if json_str != "[DONE]" {
+                    if let Ok(parsed) = serde_json::from_str::<GeminiResponsePartial>(json_str) {
+                        if let Some(usage) = parsed.usage_metadata {
+                            *usage_metadata_clone.lock().unwrap() = Some(usage);
+                        }
+                    }
+                }
+            }
+
+            // Stream finished, log usage if metadata found
+            if let Some(key_id) = api_key_id_captured {
+                let latency_ms = start.elapsed().as_millis() as i64;
+                let usage = usage_metadata_clone.lock().unwrap().take();
+                if let Some(u) = usage {
+                    if let Err(e) = RequestLog::create(
+                        &pool_clone,
+                        key_id,
+                        endpoint_clone,
+                        model_version_clone,
+                        u.prompt_token_count.unwrap_or(0),
+                        u.candidates_token_count.unwrap_or(0),
+                        u.total_token_count.unwrap_or(0),
+                        latency_ms,
+                    )
+                    .await
+                    {
+                        error!("Failed to log request usage: {}", e);
+                    }
+                } else {
+                    warn!(
+                        "No usage metadata found in stream for endpoint: {}",
+                        endpoint_clone
+                    );
+                }
+            }
+        });
+
+        return builder.streaming(stream_rx);
+    }
+
+    match upstream_resp.bytes().await {
+        Ok(bytes) => {
+            let latency_ms = start.elapsed().as_millis() as i64;
+            if status.is_success() {
+                if let Ok(partial) = serde_json::from_slice::<GeminiResponsePartial>(&bytes) {
+                    if let Some(usage) = partial.usage_metadata {
+                        if let Some(key_id) = api_key_id {
+                            let pool = pool.get_ref().clone();
+                            let endpoint_clone = endpoint.clone();
+                            let model_version_clone = model_version.clone();
+                            tokio::spawn(async move {
+                                if let Err(e) = RequestLog::create(
+                                    &pool,
+                                    key_id,
+                                    endpoint_clone,
+                                    model_version_clone,
+                                    usage.prompt_token_count.unwrap_or(0),
+                                    usage.candidates_token_count.unwrap_or(0),
+                                    usage.total_token_count.unwrap_or(0),
+                                    latency_ms,
+                                )
+                                .await
+                                {
+                                    error!("Failed to log request usage: {}", e);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+            builder.body(bytes)
+        }
+        Err(e) => {
+            error!("Failed to read upstream response body: {}", e);
+            HttpResponse::InternalServerError().body("Upstream error")
         }
     }
 }

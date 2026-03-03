@@ -48,7 +48,7 @@ pub async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             .service(
                 web::scope("/v1beta")
                     .wrap(ApiKeyAuth)
-                    .route("/{tail:.*}", web::to(proxy::forward_request)),
+                    .route("/{tail:.*}", web::to(proxy::proxy_handler)),
             )
     })
     .bind(("0.0.0.0", 8080))?

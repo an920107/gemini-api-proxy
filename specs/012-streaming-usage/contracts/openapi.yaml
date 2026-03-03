@@ -1,0 +1,74 @@
+openapi: 3.0.0
+info:
+  title: Gemini API Proxy - Streaming Content API
+  version: 1.0.0
+  description: API for proxying streaming requests to the Gemini Models content generation endpoint, protected by API Key Authentication.
+
+paths:
+  /v1beta/models/{model_id}:streamGenerateContent:
+    post:
+      summary: Stream Generate Content Endpoint
+      description: |
+        Proxies a streaming request to the real Gemini API's content generation endpoint.
+        Accessing this endpoint requires a valid API key.
+        The response is a stream of Server-Sent Events (SSE) which may include usage metadata.
+      parameters:
+        - in: path
+          name: model_id
+          required: true
+          schema:
+            type: string
+          description: The ID of the model to use for content generation.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contents:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      parts:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            text:
+                              type: string
+      responses:
+        "200":
+          description: Streaming response with content and potentially usage metadata.
+          content:
+            text/event-stream:
+              schema:
+                type: string # Representing the SSE stream
+                format: binary # Indicates it's a stream, specific content TBD by implementation
+        "401":
+          description: Unauthorized. The API key is missing from the request header.
+        "403":
+          description: Forbidden. The API key is invalid or inactive.
+        "500":
+          description: Internal server error, or error from upstream Gemini API.
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-goog-api-key
+      description: API key for client authentication.
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: A brief description of the error.
+      example:
+        error: "Forbidden"
