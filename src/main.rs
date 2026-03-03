@@ -1,23 +1,26 @@
-use actix_web::{App, HttpServer, web};
+use actix_web::{web, App, HttpServer};
 use gemini_api_proxy::{
-    config,
+    config::{self, Config},
     middleware::auth::ApiKeyAuth,
     routes::{health, proxy},
 };
 use log::{info, warn};
-use std::env;
 use std::error::Error;
 
 /// Entry point for the Actix Web application.
 #[actix_web::main]
 pub async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-    // 1. Initialize the logger for structured and colorful logging.
+    // 1. Initialize the logger and load environment variables.
     env_logger::init();
     dotenvy::dotenv().ok();
     info!("Server startup initiated.");
 
+    // Load configuration
+    let config = Config::from_env()?;
+    let app_config = config.clone();
+
     // 2. Create and get the database connection pool.
-    let pool = config::get_db_pool(None).await?;
+    let pool = config::get_db_pool(Some(&config.database_url)).await?;
     info!("Database connection pool created.");
 
     // 3. Run database migrations
@@ -33,17 +36,17 @@ pub async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     // 5. Initialize shared HTTP client
     let client = reqwest::Client::new();
-    let gemini_base_url = env::var("GEMINI_BASE_URL")
-        .unwrap_or_else(|_| "https://generativelanguage.googleapis.com".to_string());
 
-    info!("Gemini Base URL: {}", gemini_base_url);
+    info!("Gemini Base URL: {}", &config.gemini_base_url);
+    info!("Payload size limit: {} bytes", &config.payload_size_limit);
 
     // 6. Configure and start the Actix Web server.
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(client.clone()))
-            .app_data(web::Data::new(gemini_base_url.clone()))
+            .app_data(web::Data::new(app_config.clone()))
+            .app_data(web::JsonConfig::default().limit(app_config.payload_size_limit))
             .service(web::resource("/health").route(web::get().to(health::health_check)))
             .service(
                 web::scope("/v1beta")

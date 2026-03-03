@@ -63,7 +63,10 @@ where
                 .and_then(|hv| hv.to_str().ok());
 
             let api_key = match api_key {
-                Some(key) => key,
+                Some(key) => {
+                    info!("API Key received.");
+                    key
+                }
                 None => {
                     info!("API Key missing, returning 401 Unauthorized");
                     let (req, _pl) = req.into_parts();
@@ -74,8 +77,12 @@ where
 
             let pool = req.app_data::<Data<PgPool>>();
             let pool = match pool {
-                Some(pool) => pool,
+                Some(pool) => {
+                    info!("Database pool found in app data.");
+                    pool
+                }
                 None => {
+                    info!("Database pool not found in app data, returning 500 Internal Server Error");
                     let (req, _pl) = req.into_parts();
                     let res = HttpResponse::InternalServerError()
                         .body("Database pool not found in app data")
@@ -85,17 +92,24 @@ where
             };
 
             let hashed_api_key = hash_api_key(api_key);
+            info!("Hashed API Key: {}", hashed_api_key);
 
             let result = ApiKey::find_by_hashed_key(pool.get_ref(), &hashed_api_key).await;
 
             match result {
                 Ok(Some(key)) if key.is_active => {
-                    info!("API Key valid, forwarding request");
+                    info!("API Key valid and active, forwarding request");
                     req.extensions_mut().insert(key.id);
                     s_cloned.call(req).await.map(|res| res.map_into_left_body())
                 }
-                Ok(_) => {
-                    info!("API Key invalid or inactive, returning 403 Forbidden");
+                Ok(Some(_)) => {
+                    info!("API Key inactive, returning 403 Forbidden");
+                    let (req, _pl) = req.into_parts();
+                    let res = HttpResponse::Forbidden().finish().map_into_right_body();
+                    Ok(ServiceResponse::new(req, res))
+                }
+                Ok(None) => {
+                    info!("API Key not found, returning 403 Forbidden");
                     let (req, _pl) = req.into_parts();
                     let res = HttpResponse::Forbidden().finish().map_into_right_body();
                     Ok(ServiceResponse::new(req, res))

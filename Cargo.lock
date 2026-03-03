@@ -932,6 +932,7 @@ dependencies = [
 name = "gemini_api_proxy"
 version = "0.1.0"
 dependencies = [
+ "actix-http",
  "actix-web",
  "chrono",
  "dotenvy",

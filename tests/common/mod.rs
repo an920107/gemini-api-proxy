@@ -1,8 +1,6 @@
 #![allow(dead_code)]
 
-use dotenvy;
-use env_logger;
-use gemini_api_proxy::{config, models::api_key::ApiKey};
+use gemini_api_proxy::{config, models::api_key::ApiKey, utils::crypto::hash_api_key};
 use sqlx::PgPool;
 use std::sync::Once;
 use std::time::Duration;
@@ -21,8 +19,20 @@ pub fn setup() {
 }
 
 // Helper to seed the database with a valid API key for testing
-pub async fn seed_api_key(pool: &PgPool) {
-    let _ = ApiKey::create(pool, VALID_API_KEY_HASH, true).await;
+pub async fn seed_api_key(pool: &PgPool, unique_name: &str) {
+    let _ = ApiKey::create(pool, VALID_API_KEY_HASH, true, unique_name)
+        .await
+        .expect("Failed to create API key for test");
+}
+
+// Helper to seed a unique API key and return it
+pub async fn seed_unique_api_key(pool: &PgPool, unique_name: &str) -> String {
+    let api_key = format!("KEY_{}", uuid::Uuid::new_v4());
+    let hashed_key = hash_api_key(&api_key);
+    let _ = ApiKey::create(pool, &hashed_key, true, unique_name)
+        .await
+        .expect("Failed to create unique API key for test");
+    api_key
 }
 
 /// Helper to configure the test database and return a connection pool
@@ -44,6 +54,16 @@ pub async fn configure_test_db() -> PgPool {
         .expect("Failed to truncate tables");
 
     pool
+}
+
+// Helper to create a Config for tests
+pub fn setup_test_config(gemini_base_url: String) -> config::Config {
+    config::Config {
+        database_url: "".to_string(),
+        test_database_url: "".to_string(),
+        gemini_base_url,
+        payload_size_limit: 1024, // Set a default for testing
+    }
 }
 
 // Helper to poll for request logs to appear in the database
