@@ -126,14 +126,20 @@ pub async fn proxy_handler(
         let api_key_id_captured = api_key_id;
 
         tokio::spawn(async move {
+            let mut line_buffer = String::new();
             while let Some(item) = original_stream.next().await {
                 match item {
                     Ok(chunk) => {
                         if let Ok(text) = std::str::from_utf8(&chunk) {
-                            for line in text.lines() {
-                                let line = line.trim();
-                                if line.starts_with("data: ") {
-                                    let json_str = &line["data: ".len()..];
+                            line_buffer.push_str(text);
+                            
+                            while let Some(pos) = line_buffer.find('\n') {
+                                let line = line_buffer[..pos].trim_end().to_string();
+                                line_buffer.drain(..pos + 1);
+
+                                let trimmed_line = line.trim();
+                                if trimmed_line.starts_with("data: ") {
+                                    let json_str = &trimmed_line["data: ".len()..];
                                     if json_str == "[DONE]" {
                                         continue;
                                     }
@@ -158,6 +164,19 @@ pub async fn proxy_handler(
                             message: e.to_string(),
                         }));
                         break;
+                    }
+                }
+            }
+
+            // Process any remaining data in the buffer after stream ends
+            let final_line = line_buffer.trim();
+            if final_line.starts_with("data: ") {
+                let json_str = &final_line["data: ".len()..];
+                if json_str != "[DONE]" {
+                    if let Ok(parsed) = serde_json::from_str::<GeminiResponsePartial>(json_str) {
+                        if let Some(usage) = parsed.usage_metadata {
+                            *usage_metadata_clone.lock().unwrap() = Some(usage);
+                        }
                     }
                 }
             }
