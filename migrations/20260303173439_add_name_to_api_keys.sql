@@ -8,5 +8,3 @@ ALTER COLUMN name SET NOT NULL;
 
 ALTER TABLE api_keys
 ADD CONSTRAINT api_keys_name_unique UNIQUE (name);
-
-CREATE INDEX api_keys_name_idx ON api_keys (name);
