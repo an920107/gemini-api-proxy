@@ -65,4 +65,5 @@ async fn test_streaming_usage_logging() {
     assert_eq!(log.prompt_tokens, 10);
     assert_eq!(log.candidate_tokens, 20);
     assert_eq!(log.total_tokens, 30);
+    assert_eq!(log.model_version, "gemini-pro");
 }

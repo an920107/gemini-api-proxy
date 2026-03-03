@@ -1,6 +1,6 @@
 use crate::errors::StreamError;
 use crate::models::{
-    gemini::{GeminiResponsePartial, GeminiUsageMetadata, StreamedGeminiResponse},
+    gemini::{GeminiResponsePartial, GeminiUsageMetadata},
     request_log::RequestLog,
 };
 use actix_web::http::StatusCode;
@@ -99,6 +99,14 @@ pub async fn proxy_handler(
         }
     }
 
+    let model_version = endpoint
+        .strip_prefix("models/")
+        .unwrap_or(&endpoint)
+        .split(':')
+        .next()
+        .unwrap_or(&endpoint)
+        .to_string();
+
     if headers.get("content-type").map_or(false, |h| {
         h.to_str().unwrap_or("").contains("text/event-stream")
     }) {
@@ -117,7 +125,7 @@ pub async fn proxy_handler(
                             for line in text.lines().filter(|l| l.starts_with("data: ")) {
                                 let json_str = &line["data: ".len()..];
                                 if let Ok(parsed) =
-                                    serde_json::from_str::<StreamedGeminiResponse>(json_str)
+                                    serde_json::from_str::<GeminiResponsePartial>(json_str)
                                 {
                                     if let Some(usage) = parsed.usage_metadata {
                                         *usage_metadata_clone.lock().unwrap() = Some(usage);
@@ -145,6 +153,7 @@ pub async fn proxy_handler(
         if let Some(key_id) = api_key_id {
             let pool = pool.get_ref().clone();
             let endpoint_clone = endpoint.clone();
+            let model_version_clone = model_version.clone();
             tokio::spawn(async move {
                 tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
@@ -154,7 +163,7 @@ pub async fn proxy_handler(
                         &pool,
                         key_id,
                         endpoint_clone,
-                        "unknown".to_string(),
+                        model_version_clone,
                         u.prompt_token_count.unwrap_or(0),
                         u.candidates_token_count.unwrap_or(0),
                         u.total_token_count.unwrap_or(0),
@@ -185,12 +194,13 @@ pub async fn proxy_handler(
                         if let Some(key_id) = api_key_id {
                             let pool = pool.get_ref().clone();
                             let endpoint_clone = endpoint.clone();
+                            let model_version_clone = model_version.clone();
                             tokio::spawn(async move {
                                 if let Err(e) = RequestLog::create(
                                     &pool,
                                     key_id,
                                     endpoint_clone,
-                                    partial.model_version.unwrap_or("unknown".to_string()),
+                                    model_version_clone,
                                     usage.prompt_token_count.unwrap_or(0),
                                     usage.candidates_token_count.unwrap_or(0),
                                     usage.total_token_count.unwrap_or(0),
