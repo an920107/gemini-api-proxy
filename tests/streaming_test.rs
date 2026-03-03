@@ -1,10 +1,12 @@
 //! tests/streaming_test.rs
 
-use actix_web::{App, test, web};
+use actix_web::{test, web, App};
 use gemini_api_proxy::{
     middleware::auth::ApiKeyAuth, models::request_log::RequestLog, routes::proxy::proxy_handler,
 };
 use sqlx::PgPool;
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 
 mod common;
 
@@ -13,19 +15,22 @@ async fn test_streaming_usage_logging() {
     let pool: PgPool = common::configure_test_db().await;
     common::seed_api_key(&pool).await;
 
-    // Mock the upstream Gemini API
-    let mut server = mockito::Server::new_async().await;
-    let mock = server
-        .mock("POST", "/v1beta/models/gemini-pro:streamGenerateContent")
-        .with_status(200)
-        .with_header("content-type", "text/event-stream")
-        // Simulate a stream with a usage metadata chunk at the end
-        .with_body(
-            "data: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"Hello, \"}]}}]}\r\n\r\n\
+    // Mock the upstream Gemini API using wiremock
+    let mock_server = MockServer::start().await;
+    let gemini_base_url = mock_server.uri();
+
+    let streaming_body = "data: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"Hello, \"}]}}]}\r\n\r\n\
              data: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"world!\"}]}}]}\r\n\r\n\
-             data: {\"usageMetadata\": {\"promptTokenCount\": 10, \"candidatesTokenCount\": 20, \"totalTokenCount\": 30}}\r\n\r\n",
+             data: {\"usageMetadata\": {\"promptTokenCount\": 10, \"candidatesTokenCount\": 20, \"totalTokenCount\": 30}}\r\n\r\n";
+
+    Mock::given(method("POST"))
+        .and(path("/v1beta/models/gemini-pro:streamGenerateContent"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_bytes(streaming_body.as_bytes())
+                .insert_header("content-type", "text/event-stream"),
         )
-        .create_async()
+        .mount(&mock_server)
         .await;
 
     let client = reqwest::Client::new();
@@ -33,7 +38,7 @@ async fn test_streaming_usage_logging() {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(client))
-            .app_data(web::Data::new(server.url()))
+            .app_data(web::Data::new(gemini_base_url))
             .service(
                 web::scope("/v1beta")
                     .wrap(ApiKeyAuth)
@@ -51,7 +56,9 @@ async fn test_streaming_usage_logging() {
     let resp = test::call_service(&app, req).await;
     assert!(resp.status().is_success());
 
-    mock.assert_async().await;
+    // Consume the body to ensure the stream is processed
+    let body = test::read_body(resp).await;
+    assert!(!body.is_empty());
 
     // Wait for the request log to be written to the database
     common::wait_for_request_log(&pool).await;

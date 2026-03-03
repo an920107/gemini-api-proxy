@@ -5,7 +5,7 @@ use crate::models::{
 };
 use actix_web::http::StatusCode;
 use actix_web::web::Bytes;
-use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use futures_util::stream::StreamExt;
 use log::{error, info, warn};
 use sqlx::PgPool;
@@ -108,7 +108,10 @@ pub async fn proxy_handler(
         .to_string();
 
     if headers.get("content-type").map_or(false, |h| {
-        h.to_str().unwrap_or("").contains("text/event-stream")
+        h.to_str()
+            .unwrap_or("")
+            .to_lowercase()
+            .contains("text/event-stream")
     }) {
         let usage_metadata = Arc::new(Mutex::new(None::<GeminiUsageMetadata>));
         let usage_metadata_clone = usage_metadata.clone();
@@ -117,19 +120,29 @@ pub async fn proxy_handler(
         let (tx, rx) = mpsc::unbounded_channel::<Result<Bytes, StreamError>>();
         let stream_rx = UnboundedReceiverStream::new(rx);
 
+        let pool_clone = pool.get_ref().clone();
+        let endpoint_clone = endpoint.clone();
+        let model_version_clone = model_version.clone();
+        let api_key_id_captured = api_key_id;
+
         tokio::spawn(async move {
             while let Some(item) = original_stream.next().await {
                 match item {
                     Ok(chunk) => {
                         if let Ok(text) = std::str::from_utf8(&chunk) {
-                            for line in text.lines().filter(|l| l.starts_with("data: ")) {
-                                let json_str = &line["data: ".len()..];
-                                if let Ok(parsed) =
-                                    serde_json::from_str::<GeminiResponsePartial>(json_str)
-                                {
-                                    if let Some(usage) = parsed.usage_metadata {
-                                        *usage_metadata_clone.lock().unwrap() = Some(usage);
-                                        break;
+                            for line in text.lines() {
+                                let line = line.trim();
+                                if line.starts_with("data: ") {
+                                    let json_str = &line["data: ".len()..];
+                                    if json_str == "[DONE]" {
+                                        continue;
+                                    }
+                                    if let Ok(parsed) =
+                                        serde_json::from_str::<GeminiResponsePartial>(json_str)
+                                    {
+                                        if let Some(usage) = parsed.usage_metadata {
+                                            *usage_metadata_clone.lock().unwrap() = Some(usage);
+                                        }
                                     }
                                 }
                             }
@@ -139,6 +152,7 @@ pub async fn proxy_handler(
                         }
                     }
                     Err(e) => {
+                        error!("Stream error: {}", e);
                         let _ = tx.send(Err(StreamError {
                             status: StatusCode::INTERNAL_SERVER_ERROR,
                             message: e.to_string(),
@@ -147,20 +161,14 @@ pub async fn proxy_handler(
                     }
                 }
             }
-        });
 
-        let latency_ms = start.elapsed().as_millis() as i64;
-        if let Some(key_id) = api_key_id {
-            let pool = pool.get_ref().clone();
-            let endpoint_clone = endpoint.clone();
-            let model_version_clone = model_version.clone();
-            tokio::spawn(async move {
-                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-
-                let usage = usage_metadata.lock().unwrap().take();
+            // Stream finished, log usage if metadata found
+            if let Some(key_id) = api_key_id_captured {
+                let latency_ms = start.elapsed().as_millis() as i64;
+                let usage = usage_metadata_clone.lock().unwrap().take();
                 if let Some(u) = usage {
                     if let Err(e) = RequestLog::create(
-                        &pool,
+                        &pool_clone,
                         key_id,
                         endpoint_clone,
                         model_version_clone,
@@ -179,8 +187,8 @@ pub async fn proxy_handler(
                         endpoint_clone
                     );
                 }
-            });
-        }
+            }
+        });
 
         return builder.streaming(stream_rx);
     }
