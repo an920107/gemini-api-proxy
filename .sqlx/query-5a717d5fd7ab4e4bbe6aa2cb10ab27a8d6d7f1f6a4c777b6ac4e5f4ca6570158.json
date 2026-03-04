@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, hashed_key, is_active, created_at FROM api_keys WHERE hashed_key = $1",
+  "query": "SELECT id, hashed_key, is_active, created_at, name FROM api_keys WHERE hashed_key = $1",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "ordinal": 3,
         "name": "created_at",
         "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
@@ -33,8 +38,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "5779ed228276eb91c9d381156d4fd764c965b3f3716a1e964e556b927fc6c3a7"
+  "hash": "5a717d5fd7ab4e4bbe6aa2cb10ab27a8d6d7f1f6a4c777b6ac4e5f4ca6570158"
 }

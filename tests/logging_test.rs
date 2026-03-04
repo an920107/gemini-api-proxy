@@ -1,5 +1,6 @@
 use actix_web::{App, test, web};
 use gemini_api_proxy::{middleware::auth::ApiKeyAuth, routes::proxy};
+use uuid::Uuid;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 mod common;
@@ -8,7 +9,7 @@ mod common;
 async fn test_request_logging() {
     // 1. Setup
     let pool = common::configure_test_db().await;
-    common::seed_api_key(&pool).await;
+    let api_key = common::seed_unique_api_key(&pool, &Uuid::new_v4().to_string()).await;
 
     let mock_server = MockServer::start().await;
     let gemini_base_url = mock_server.uri();
@@ -27,12 +28,13 @@ async fn test_request_logging() {
         .await;
 
     let client = reqwest::Client::new();
+    let mock_config = common::setup_test_config(gemini_base_url);
 
     let app = test::init_service(
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(client))
-            .app_data(web::Data::new(gemini_base_url))
+            .app_data(web::Data::new(mock_config))
             .service(
                 web::scope("/v1beta")
                     .wrap(ApiKeyAuth)
@@ -44,7 +46,7 @@ async fn test_request_logging() {
     // 2. Act
     let req = test::TestRequest::post()
         .uri("/v1beta/models/gemini-pro:generateContent")
-        .insert_header(("x-goog-api-key", common::VALID_API_KEY))
+        .insert_header(("x-goog-api-key", api_key.as_str()))
         .set_json(serde_json::json!({}))
         .to_request();
 

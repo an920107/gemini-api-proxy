@@ -4,7 +4,7 @@ use actix_web::{test, web, App};
 use gemini_api_proxy::{
     middleware::auth::ApiKeyAuth, models::request_log::RequestLog, routes::proxy::proxy_handler,
 };
-use sqlx::PgPool;
+use uuid::Uuid;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -12,12 +12,12 @@ mod common;
 
 #[actix_web::test]
 async fn test_streaming_usage_logging() {
-    let pool: PgPool = common::configure_test_db().await;
-    common::seed_api_key(&pool).await;
+    let pool = common::configure_test_db().await;
+    let api_key = common::seed_unique_api_key(&pool, &Uuid::new_v4().to_string()).await;
 
     // Mock the upstream Gemini API using wiremock
     let mock_server = MockServer::start().await;
-    let gemini_base_url = mock_server.uri();
+    let mock_config = common::setup_test_config(mock_server.uri());
 
     let streaming_body = "data: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"Hello, \"}]}}]}\r\n\r\n\
              data: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"world!\"}]}}]}\r\n\r\n\
@@ -38,7 +38,7 @@ async fn test_streaming_usage_logging() {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(client))
-            .app_data(web::Data::new(gemini_base_url))
+            .app_data(web::Data::new(mock_config))
             .service(
                 web::scope("/v1beta")
                     .wrap(ApiKeyAuth)
@@ -49,7 +49,7 @@ async fn test_streaming_usage_logging() {
 
     let req = test::TestRequest::post()
         .uri("/v1beta/models/gemini-pro:streamGenerateContent")
-        .insert_header(("x-goog-api-key", common::VALID_API_KEY))
+        .insert_header(("x-goog-api-key", api_key.as_str()))
         .set_payload(r#"{"contents":[{"parts":[{"text":"test"}]}]}"#)
         .to_request();
 

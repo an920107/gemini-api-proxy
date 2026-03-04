@@ -37,7 +37,7 @@ pub async fn proxy_handler(
     req: HttpRequest,
     body: Bytes,
     client: web::Data<reqwest::Client>,
-    base_url: web::Data<String>,
+    config: web::Data<crate::config::Config>,
     pool: web::Data<PgPool>,
 ) -> HttpResponse {
     let start = Instant::now();
@@ -49,7 +49,7 @@ pub async fn proxy_handler(
         .unwrap_or_else(|| req.path().trim_start_matches("/v1beta/"));
     let endpoint = tail.to_string();
 
-    let base = base_url.as_str().trim_end_matches('/');
+    let base = config.gemini_base_url.trim_end_matches('/');
     let mut upstream_url = format!("{}/v1beta/{}", base, tail);
     if let Some(query) = req.uri().query() {
         upstream_url.push('?');
