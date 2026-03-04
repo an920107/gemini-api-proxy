@@ -92,10 +92,8 @@ where
             };
 
             let hashed_api_key = hash_api_key(api_key);
-            info!("Hashed API Key: {}", hashed_api_key);
 
             let result = ApiKey::find_by_hashed_key(pool.get_ref(), &hashed_api_key).await;
-
             match result {
                 Ok(Some(key)) if key.is_active => {
                     info!("API Key valid and active, forwarding request");
