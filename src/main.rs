@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpServer};
+use actix_web::{App, HttpServer, web};
 use gemini_api_proxy::{
     config::{self, Config},
     middleware::auth::ApiKeyAuth,
@@ -47,6 +47,7 @@ pub async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             .app_data(web::Data::new(client.clone()))
             .app_data(web::Data::new(app_config.clone()))
             .app_data(web::JsonConfig::default().limit(app_config.payload_size_limit))
+            .app_data(web::PayloadConfig::default().limit(app_config.payload_size_limit))
             .service(web::resource("/health").route(web::get().to(health::health_check)))
             .service(
                 web::scope("/v1beta")
