@@ -20,7 +20,7 @@ pub async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let app_config = config.clone();
 
     // 2. Create and get the database connection pool.
-    let pool = config::get_db_pool(Some(&config.database_url)).await?;
+    let pool = config::get_db_pool(None).await?;
     info!("Database connection pool created.");
 
     // 3. Run database migrations
