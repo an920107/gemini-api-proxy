@@ -60,7 +60,7 @@ pub async fn configure_test_db() -> PgPool {
 pub fn setup_test_config(gemini_base_url: String) -> config::Config {
     config::Config {
         database_url: "".to_string(),
-        test_database_url: "".to_string(),
+        test_database_url: Some("".to_string()),
         gemini_base_url,
         payload_size_limit: 1024, // Set a default for testing
     }

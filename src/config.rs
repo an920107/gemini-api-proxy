@@ -6,7 +6,7 @@ use std::time::Duration;
 #[derive(Clone)]
 pub struct Config {
     pub database_url: String,
-    pub test_database_url: String,
+    pub test_database_url: Option<String>,
     pub gemini_base_url: String,
     pub payload_size_limit: usize,
 }
@@ -15,11 +15,13 @@ impl Config {
     pub fn from_env() -> Result<Self, Box<dyn Error + Send + Sync>> {
         Ok(Self {
             database_url: env::var("DATABASE_URL")?,
-            test_database_url: env::var("TEST_DATABASE_URL")?,
-            gemini_base_url: env::var("GEMINI_BASE_URL")?,
+            test_database_url: env::var("TEST_DATABASE_URL").ok(),
+            gemini_base_url: env::var("GEMINI_BASE_URL")
+                .unwrap_or_else(|_| "https://generativelanguage.googleapis.com".to_string()),
             payload_size_limit: env::var("PAYLOAD_SIZE_LIMIT")
-                .unwrap_or_else(|_| "10485760".to_string())
-                .parse()?,
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(10485760), // Default to 10MB
         })
     }
 }
